@@ -6,17 +6,17 @@ import 'responsive_framework.dart';
 /// Conditional values based on the active breakpoint.
 ///
 /// Get a [value] that corresponds to active breakpoint
-/// determined by [Condition]s set in [valueWhen].
+/// determined by [ConditionValue]s set in [valueWhen].
 /// Set a [defaultValue] for when no condition is
 /// active. Requires a parent [context] that contains
 /// a [ResponsiveWrapper].
 ///
-/// No validation is performed on [Condition]s so
+/// No validation is performed on [ConditionValue]s so
 /// valid conditions must be passed.
 class ResponsiveValue<T> {
   T? value;
   final T defaultValue;
-  final List<Condition> valueWhen;
+  final List<ConditionValue> valueWhen;
 
   final BuildContext context;
 
@@ -38,7 +38,7 @@ class ResponsiveValue<T> {
       }
     }
 
-    List<Condition> conditions = valueWhen;
+    List<ConditionValue> conditions = valueWhen;
     List<ResponsiveBreakpointSegment>? segments =
         ResponsiveWrapper.of(context).breakpointSegments;
     conditions = conditions.map((e) {
@@ -60,9 +60,9 @@ class ResponsiveValue<T> {
     value = getValue(context, conditions) ?? defaultValue;
   }
 
-  T? getValue(BuildContext context, List<Condition> conditions) {
+  T? getValue(BuildContext context, List<ConditionValue> conditions) {
     // Find the active condition.
-    Condition? activeCondition = getActiveCondition(context, conditions);
+    ConditionValue? activeCondition = getActiveCondition(context, conditions);
     if (activeCondition == null) return null;
     // Return landscape value if orientation is landscape and landscape override value is provided.
     if (ResponsiveWrapper.of(context).orientation == Orientation.landscape &&
@@ -84,9 +84,9 @@ class ResponsiveValue<T> {
   ///   a. Named breakpoints.
   ///   b. Unnamed breakpoints.
   /// Returns null if no Active Condition is found.
-  Condition? getActiveCondition(
-      BuildContext context, List<Condition> conditions) {
-    Condition? equalsCondition = conditions.firstWhereOrNull((element) {
+  ConditionValue? getActiveCondition(
+      BuildContext context, List<ConditionValue> conditions) {
+    ConditionValue? equalsCondition = conditions.firstWhereOrNull((element) {
       if (element.condition == Conditional.EQUALS) {
         return ResponsiveWrapper.of(context).activeBreakpoint.name ==
             element.name;
@@ -98,7 +98,7 @@ class ResponsiveValue<T> {
       return equalsCondition;
     }
 
-    Condition? smallerThanCondition = conditions.firstWhereOrNull((element) {
+    ConditionValue? smallerThanCondition = conditions.firstWhereOrNull((element) {
       if (element.condition == Conditional.SMALLER_THAN) {
         if (element.name != null) {
           return ResponsiveWrapper.of(context).isSmallerThan(element.name!);
@@ -112,7 +112,7 @@ class ResponsiveValue<T> {
       return smallerThanCondition;
     }
 
-    Condition? largerThanCondition =
+    ConditionValue? largerThanCondition =
         conditions.reversed.firstWhereOrNull((element) {
       if (element.condition == Conditional.LARGER_THAN) {
         if (element.name != null) {
@@ -143,14 +143,14 @@ enum Conditional {
 /// Provides the [value] when the [condition] is active.
 /// Compare conditions by setting either [breakpoint] or
 /// [name] values.
-class Condition<T> {
+class ConditionValue<T> {
   final int? breakpoint;
   final String? name;
   final Conditional? condition;
   final T? value;
   final T? landscapeValue;
 
-  const Condition._(
+  const ConditionValue._(
       {this.breakpoint,
       this.name,
       this.condition,
@@ -159,14 +159,14 @@ class Condition<T> {
       : assert(breakpoint != null || name != null),
         assert((condition == Conditional.EQUALS) ? name != null : true);
 
-  const Condition.equals({required String name, T? value, T? landscapeValue})
+  const ConditionValue.equals({required String name, T? value, T? landscapeValue})
       : this.breakpoint = null,
         this.name = name,
         this.condition = Conditional.EQUALS,
         this.value = value,
         this.landscapeValue = landscapeValue;
 
-  const Condition.largerThan(
+  const ConditionValue.largerThan(
       {int? breakpoint, String? name, T? value, T? landscapeValue})
       : this.breakpoint = breakpoint,
         this.name = name,
@@ -174,7 +174,7 @@ class Condition<T> {
         this.value = value,
         this.landscapeValue = landscapeValue;
 
-  const Condition.smallerThan(
+  const ConditionValue.smallerThan(
       {int? breakpoint, String? name, T? value, T? landscapeValue})
       : this.breakpoint = breakpoint,
         this.name = name,
@@ -182,14 +182,14 @@ class Condition<T> {
         this.value = value,
         this.landscapeValue = landscapeValue;
 
-  Condition copyWith({
+  ConditionValue copyWith({
     int? breakpoint,
     String? name,
     Conditional? condition,
     T? value,
     T? landscapeValue,
   }) =>
-      Condition._(
+      ConditionValue._(
         breakpoint: breakpoint ?? this.breakpoint,
         name: name ?? this.name,
         condition: condition ?? this.condition,
@@ -212,7 +212,7 @@ class Condition<T> {
       landscapeValue.toString() +
       ')';
 
-  int sort(Condition a, Condition b) {
+  int sort(ConditionValue a, ConditionValue b) {
     if (a.breakpoint == b.breakpoint) return 0;
 
     return (a.breakpoint! < b.breakpoint!) ? -1 : 1;
@@ -221,14 +221,14 @@ class Condition<T> {
 
 /// A convenience wrapper for responsive [Visibility].
 ///
-/// ResponsiveVisibility accepts [Condition]s in
+/// ResponsiveVisibility accepts [ConditionValue]s in
 /// [visibleWhen] and [hiddenWhen] convenience
 /// fields. The [child] widget is [visible] by default.
 class ResponsiveVisibility extends StatelessWidget {
   final Widget child;
   final bool visible;
-  final List<Condition> visibleWhen;
-  final List<Condition> hiddenWhen;
+  final List<ConditionValue> visibleWhen;
+  final List<ConditionValue> hiddenWhen;
   final Widget replacement;
   final bool maintainState;
   final bool maintainAnimation;
@@ -253,7 +253,7 @@ class ResponsiveVisibility extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Initialize mutable value holders.
-    List<Condition> conditions = [];
+    List<ConditionValue> conditions = [];
     bool? visibleValue = visible;
 
     // Combine Conditions.
@@ -280,7 +280,7 @@ class ResponsiveVisibility extends StatelessWidget {
 class ResponsiveConstraints extends StatelessWidget {
   final Widget child;
   final BoxConstraints? constraint;
-  final List<Condition> constraintsWhen;
+  final List<ConditionValue> constraintsWhen;
 
   const ResponsiveConstraints(
       {Key? key,
